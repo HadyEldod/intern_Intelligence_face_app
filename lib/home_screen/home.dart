@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'dart:math';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
@@ -15,7 +16,6 @@ class _HomeState extends State<Home> {
   File? _image;
   List<Face> faces = [];
   bool _isLoading = false;
-  double? eyeDistance, mouthWidth, noseToMouth;
 
   Future _pickImage(ImageSource source) async {
     try {
@@ -33,17 +33,10 @@ class _HomeState extends State<Home> {
 
   Future _detectFaces(File img) async {
     try {
-      final options = FaceDetectorOptions(enableContours: true);
+      final options = FaceDetectorOptions();
       final faceDetector = FaceDetector(options: options);
       final inputImage = InputImage.fromFilePath(img.path);
       faces = await faceDetector.processImage(inputImage);
-
-      if (faces.isNotEmpty) {
-        analyzeFace(faces.first);
-      } else {
-        _showError("No face detected.");
-      }
-
       setState(() {
         _isLoading = false;
       });
@@ -52,49 +45,9 @@ class _HomeState extends State<Home> {
     }
   }
 
-  double calculateDistance(Offset p1, Offset p2) {
-    return sqrt(pow(p2.dx - p1.dx, 2) + pow(p2.dy - p1.dy, 2));
-  }
-
-  void analyzeFace(Face face) {
-    final leftEyePoints = face.contours[FaceContourType.leftEye]?.points;
-    final rightEyePoints = face.contours[FaceContourType.rightEye]?.points;
-    final mouthLeftPoints = face.contours[FaceContourType.upperLipTop]?.points;
-    final mouthRightPoints = face.contours[FaceContourType.upperLipBottom]?.points;
-    final nosePoints = face.contours[FaceContourType.noseBridge]?.points;
-
-    final leftEye = leftEyePoints != null && leftEyePoints.isNotEmpty ? leftEyePoints.first : null;
-    final rightEye = rightEyePoints != null && rightEyePoints.isNotEmpty ? rightEyePoints.last : null;
-    final mouthLeft = mouthLeftPoints != null && mouthLeftPoints.isNotEmpty ? mouthLeftPoints.first : null;
-    final mouthRight = mouthRightPoints != null && mouthRightPoints.isNotEmpty ? mouthRightPoints.last : null;
-    final nose = nosePoints != null && nosePoints.isNotEmpty ? nosePoints.first : null;
-
-    setState(() {
-      if (leftEye != null && rightEye != null) {
-        eyeDistance = calculateDistance(
-          Offset(leftEye.x.toDouble(), leftEye.y.toDouble()),
-          Offset(rightEye.x.toDouble(), rightEye.y.toDouble()),
-        );
-      }
-      if (mouthLeft != null && mouthRight != null) {
-        mouthWidth = calculateDistance(
-          Offset(mouthLeft.x.toDouble(), mouthLeft.y.toDouble()),
-          Offset(mouthRight.x.toDouble(), mouthRight.y.toDouble()),
-        );
-      }
-      if (nose != null && mouthRight != null) {
-        noseToMouth = calculateDistance(
-          Offset(nose.x.toDouble(), nose.y.toDouble()),
-          Offset(mouthRight.x.toDouble(), mouthRight.y.toDouble()),
-        );
-      }
-    });
-  }
-
   void _showError(String message) {
     setState(() {
       _isLoading = false;
-      faces.clear(); // حذف الوجوه السابقة لضمان عدم عرض بيانات خاطئة
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
@@ -169,22 +122,14 @@ class _HomeState extends State<Home> {
               ],
             ),
             SizedBox(height: 20),
-            if (faces.isNotEmpty) ...[
-              Text(
-                'Faces detected: ${faces.length}',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent,
-                ),
+            Text(
+              'Faces detected: ${faces.length}',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent,
               ),
-              if (eyeDistance != null)
-                Text("Eye Distance: ${eyeDistance!.toStringAsFixed(2)} px", style: TextStyle(fontSize: 16)),
-              if (mouthWidth != null)
-                Text("Mouth Width: ${mouthWidth!.toStringAsFixed(2)} px", style: TextStyle(fontSize: 16)),
-              if (noseToMouth != null)
-                Text("Nose to Mouth: ${noseToMouth!.toStringAsFixed(2)} px", style: TextStyle(fontSize: 16)),
-            ]
+            ),
           ],
         ),
       ),
