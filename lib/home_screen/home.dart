@@ -33,7 +33,7 @@ class _HomeState extends State<Home> {
 
   Future _detectFaces(File img) async {
     try {
-      final options = FaceDetectorOptions();
+      final options = FaceDetectorOptions(enableClassification: true, enableLandmarks: true);
       final faceDetector = FaceDetector(options: options);
       final inputImage = InputImage.fromFilePath(img.path);
       faces = await faceDetector.processImage(inputImage);
@@ -122,14 +122,35 @@ class _HomeState extends State<Home> {
               ],
             ),
             SizedBox(height: 20),
-            Text(
-              'Faces detected: ${faces.length}',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueAccent,
+            if (faces.isNotEmpty)
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: faces.length == 1
+                    ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Face Details", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+                    Divider(),
+                    Text("👀 Eye Distance: ${faces[0].landmarks[FaceLandmarkType.leftEye]?.position.distanceTo(faces[0].landmarks[FaceLandmarkType.rightEye]!.position).toStringAsFixed(2) ?? "N/A"} px"),
+                    Text("👃 Nose Position: ${faces[0].landmarks[FaceLandmarkType.noseBase]?.position.toString() ?? "N/A"}"),
+                  ],
+                )
+                    : Text(
+                  "Faces detected: ${faces.length}",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                ),
               ),
-            ),
           ],
         ),
       ),
